@@ -115,6 +115,15 @@ body::after{
   margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;
 }
 
+.api-key-input{
+  width:100%;padding:12px 16px;
+  background:var(--card2);border:1.5px solid var(--border);
+  border-radius:10px;color:var(--text);font-size:13px;
+  font-family:'JetBrains Mono',monospace;
+  transition:border-color .2s;
+}
+.api-key-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,111,255,0.15);}
+
 textarea{
   width:100%;height:200px;resize:vertical;
   background:var(--card2);border:1.5px solid var(--border);
@@ -251,6 +260,13 @@ textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba
 .err-box{background:var(--red-light);border:1px solid rgba(192,57,43,0.2);border-radius:10px;padding:14px 18px;color:var(--red);font-size:14px;margin-bottom:16px;}
 .section-hdr{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
 
+.api-key-banner{
+  background:linear-gradient(135deg,rgba(124,111,255,0.1),rgba(77,159,255,0.1));
+  border:1px solid rgba(124,111,255,0.25);border-radius:12px;padding:16px 20px;
+  margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.api-key-banner-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--purple);margin-bottom:6px;}
+
 @media(max-width:640px){
   .stats-row{grid-template-columns:1fr 1fr;}
   .metrics-3{grid-template-columns:1fr 1fr;}
@@ -262,26 +278,147 @@ textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba
 <body>
 <div id="root"></div>
 
-<script id="countries-data" type="application/json">{{ countries | tojson | safe }}</script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <script type="text/babel">
-{% raw %}
-const {useState,useEffect,useRef,useCallback}=React;
+const {useState,useEffect,useRef,useCallback} = React;
 
-const COUNTRIES_RAW = JSON.parse(document.getElementById('countries-data').textContent);
-const COUNTRIES = COUNTRIES_RAW;
+/* ─── COUNTRIES DATA ─── */
+const COUNTRIES = {
+  "North America": [
+    {code:"US",name:"United States",flag:"🇺🇸",cities:["New York","San Francisco","Seattle","Austin","Boston","Chicago","Los Angeles","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"World's largest professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}"},
+      {name:"Indeed",icon:"🔍",desc:"Millions of jobs worldwide",rating:4.5,color:"#003a9b",urlTemplate:"https://www.indeed.com/jobs?q={skills}&l={loc}"},
+      {name:"Glassdoor",icon:"⭐",desc:"Jobs + company reviews",rating:4.3,color:"#0caa41",urlTemplate:"https://www.glassdoor.com/Job/jobs.htm?sc.keyword={skills}&locT=C&locId=1147401"},
+      {name:"Wellfound",icon:"🚀",desc:"Top startup jobs",rating:4.4,color:"#fb4a00",urlTemplate:"https://wellfound.com/jobs?q={skills}&l={loc}"},
+      {name:"Dice",icon:"🎲",desc:"Tech jobs specialist",rating:4.0,color:"#e53935",urlTemplate:"https://www.dice.com/jobs?q={skills}&location={loc}"},
+      {name:"Hired",icon:"🤝",desc:"Tech talent marketplace",rating:4.2,color:"#7c4dff",urlTemplate:"https://hired.com/jobs?q={skills}"},
+    ]},
+    {code:"CA",name:"Canada",flag:"🇨🇦",cities:["Toronto","Vancouver","Montreal","Calgary","Ottawa","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+Canada"},
+      {name:"Indeed Canada",icon:"🔍",desc:"Canada's top job board",rating:4.5,color:"#003a9b",urlTemplate:"https://ca.indeed.com/jobs?q={skills}&l={loc}"},
+      {name:"Workopolis",icon:"🍁",desc:"Canadian job search",rating:4.0,color:"#e53935",urlTemplate:"https://www.workopolis.com/jobsearch/find-jobs?ak={skills}&l={loc}"},
+      {name:"JobBank",icon:"🏛️",desc:"Government of Canada jobs",rating:4.2,color:"#d32f2f",urlTemplate:"https://www.jobbank.gc.ca/jobsearch/jobsearch?searchstring={skills}&locationstring={loc}"},
+    ]},
+  ],
+  "Europe": [
+    {code:"GB",name:"United Kingdom",flag:"🇬🇧",cities:["London","Manchester","Edinburgh","Bristol","Birmingham","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+UK"},
+      {name:"Reed",icon:"🌿",desc:"UK's #1 job site",rating:4.6,color:"#d62b2b",urlTemplate:"https://www.reed.co.uk/jobs/{skills}-jobs-in-{loc}"},
+      {name:"Totaljobs",icon:"📋",desc:"UK job search leader",rating:4.3,color:"#ff6b35",urlTemplate:"https://www.totaljobs.com/jobs/{skills}/in-{loc}"},
+      {name:"CWJobs",icon:"💻",desc:"UK tech specialists",rating:4.1,color:"#0072bc",urlTemplate:"https://www.cwjobs.co.uk/jobs/{skills}/in-{loc}"},
+    ]},
+    {code:"DE",name:"Germany",flag:"🇩🇪",cities:["Berlin","Munich","Hamburg","Frankfurt","Cologne","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+Germany"},
+      {name:"StepStone",icon:"🪜",desc:"Germany's leading job board",rating:4.5,color:"#f60",urlTemplate:"https://www.stepstone.de/jobs/{skills}/in-{loc}.html"},
+      {name:"XING",icon:"✖️",desc:"German professional network",rating:4.2,color:"#026466",urlTemplate:"https://www.xing.com/jobs/search?keywords={skills}&location={loc}"},
+      {name:"Indeed DE",icon:"🔍",desc:"German job search",rating:4.4,color:"#003a9b",urlTemplate:"https://de.indeed.com/jobs?q={skills}&l={loc}"},
+    ]},
+    {code:"NL",name:"Netherlands",flag:"🇳🇱",cities:["Amsterdam","Rotterdam","The Hague","Utrecht","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+Netherlands"},
+      {name:"Nationale Vacaturebank",icon:"🌷",desc:"Top Dutch job board",rating:4.3,color:"#ff6b35",urlTemplate:"https://www.nationalevacaturebank.nl/vacature/zoeken?query={skills}&location={loc}"},
+      {name:"Monsterboard",icon:"👾",desc:"Dutch job search",rating:4.0,color:"#7c00f0",urlTemplate:"https://www.monsterboard.nl/vacatures/zoeken?q={skills}&where={loc}"},
+    ]},
+    {code:"FR",name:"France",flag:"🇫🇷",cities:["Paris","Lyon","Marseille","Toulouse","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+France"},
+      {name:"Indeed FR",icon:"🔍",desc:"French job search",rating:4.4,color:"#003a9b",urlTemplate:"https://fr.indeed.com/emplois?q={skills}&l={loc}"},
+      {name:"Welcome to the Jungle",icon:"🌿",desc:"French startup jobs",rating:4.5,color:"#1DB954",urlTemplate:"https://www.welcometothejungle.com/fr/jobs?query={skills}&refinementList%5Boffices.city%5D%5B%5D={loc}"},
+    ]},
+    {code:"ES",name:"Spain",flag:"🇪🇸",cities:["Madrid","Barcelona","Valencia","Seville","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+Spain"},
+      {name:"Infojobs",icon:"ℹ️",desc:"Spain's top job board",rating:4.5,color:"#009fe3",urlTemplate:"https://www.infojobs.net/jobsearch/search-results/list.xhtml?keyword={skills}&city={loc}"},
+      {name:"Indeed ES",icon:"🔍",desc:"Spanish job search",rating:4.3,color:"#003a9b",urlTemplate:"https://es.indeed.com/jobs?q={skills}&l={loc}"},
+    ]},
+  ],
+  "Asia Pacific": [
+    {code:"IN",name:"India",flag:"🇮🇳",cities:["Bangalore","Mumbai","Hyderabad","Pune","Chennai","Delhi","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+India"},
+      {name:"Naukri",icon:"🔶",desc:"India's #1 job portal",rating:4.7,color:"#fd7e00",urlTemplate:"https://www.naukri.com/{skills}-jobs-in-{loc}"},
+      {name:"Indeed IN",icon:"🔍",desc:"Indian job search",rating:4.4,color:"#003a9b",urlTemplate:"https://in.indeed.com/jobs?q={skills}&l={loc}"},
+      {name:"Shine",icon:"✨",desc:"Leading Indian job board",rating:4.2,color:"#00bfa5",urlTemplate:"https://www.shine.com/job-search/{skills}-jobs-in-{loc}"},
+      {name:"Wellfound",icon:"🚀",desc:"Startup jobs India",rating:4.3,color:"#fb4a00",urlTemplate:"https://wellfound.com/jobs?q={skills}&l=India"},
+      {name:"Instahyre",icon:"⚡",desc:"AI-powered hiring India",rating:4.4,color:"#7c4dff",urlTemplate:"https://www.instahyre.com/search-jobs/?keywords={skills}&location={loc}"},
+    ]},
+    {code:"SG",name:"Singapore",flag:"🇸🇬",cities:["Singapore","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location=Singapore"},
+      {name:"JobsDB",icon:"📱",desc:"Asia's top job board",rating:4.5,color:"#e53935",urlTemplate:"https://sg.jobsdb.com/j?q={skills}&l=Singapore"},
+      {name:"MyCareersFuture",icon:"🇸🇬",desc:"Singapore government jobs",rating:4.6,color:"#d62b2b",urlTemplate:"https://www.mycareersfuture.gov.sg/search?search={skills}&sortBy=new_posting_date"},
+      {name:"Indeed SG",icon:"🔍",desc:"Singapore job search",rating:4.4,color:"#003a9b",urlTemplate:"https://sg.indeed.com/jobs?q={skills}&l=Singapore"},
+    ]},
+    {code:"AU",name:"Australia",flag:"🇦🇺",cities:["Sydney","Melbourne","Brisbane","Perth","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+Australia"},
+      {name:"Seek",icon:"🔎",desc:"Australia's #1 job site",rating:4.8,color:"#e60278",urlTemplate:"https://www.seek.com.au/{skills}-jobs/in-{loc}"},
+      {name:"Indeed AU",icon:"🔍",desc:"Australian job search",rating:4.4,color:"#003a9b",urlTemplate:"https://au.indeed.com/jobs?q={skills}&l={loc}"},
+      {name:"Jora",icon:"🦘",desc:"Australian job aggregator",rating:4.1,color:"#ff6b35",urlTemplate:"https://au.jora.com/j?q={skills}&l={loc}"},
+    ]},
+    {code:"JP",name:"Japan",flag:"🇯🇵",cities:["Tokyo","Osaka","Kyoto","Yokohama","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+Japan"},
+      {name:"Gaijinpot",icon:"🗾",desc:"English jobs in Japan",rating:4.4,color:"#e53935",urlTemplate:"https://jobs.gaijinpot.com/index/index/search?language=1&keywords={skills}&region={loc}"},
+      {name:"Indeed JP",icon:"🔍",desc:"Japan job search",rating:4.4,color:"#003a9b",urlTemplate:"https://jp.indeed.com/jobs?q={skills}&l={loc}"},
+    ]},
+  ],
+  "Middle East & Africa": [
+    {code:"AE",name:"UAE",flag:"🇦🇪",cities:["Dubai","Abu Dhabi","Sharjah","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+UAE"},
+      {name:"Bayt",icon:"🌙",desc:"MENA's top job board",rating:4.6,color:"#00a651",urlTemplate:"https://www.bayt.com/en/uae/jobs/{skills}-jobs/"},
+      {name:"GulfTalent",icon:"🏆",desc:"Gulf professional jobs",rating:4.4,color:"#ff6b35",urlTemplate:"https://www.gulftalent.com/jobs?search%5Bkeywords%5D={skills}&search%5Bcountry_id%5D=5"},
+      {name:"Indeed AE",icon:"🔍",desc:"UAE job search",rating:4.3,color:"#003a9b",urlTemplate:"https://ae.indeed.com/jobs?q={skills}&l={loc}"},
+    ]},
+    {code:"ZA",name:"South Africa",flag:"🇿🇦",cities:["Johannesburg","Cape Town","Durban","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+South+Africa"},
+      {name:"PNet",icon:"🌍",desc:"South Africa's top job board",rating:4.5,color:"#e53935",urlTemplate:"https://www.pnet.co.za/jobs/{skills}-jobs/in-{loc}/"},
+      {name:"CareerJunction",icon:"🔀",desc:"SA career portal",rating:4.3,color:"#0072bc",urlTemplate:"https://www.careerjunction.co.za/jobs/results?keywords={skills}&provid=0&areaid=0"},
+    ]},
+  ],
+  "Latin America": [
+    {code:"BR",name:"Brazil",flag:"🇧🇷",cities:["São Paulo","Rio de Janeiro","Belo Horizonte","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+Brazil"},
+      {name:"Catho",icon:"🐱",desc:"Brazil's leading job board",rating:4.4,color:"#e53935",urlTemplate:"https://www.catho.com.br/vagas/{skills}/"},
+      {name:"Indeed BR",icon:"🔍",desc:"Brazilian job search",rating:4.3,color:"#003a9b",urlTemplate:"https://br.indeed.com/jobs?q={skills}&l={loc}"},
+      {name:"Gupy",icon:"🚀",desc:"Brazilian HR tech platform",rating:4.5,color:"#7c4dff",urlTemplate:"https://portal.gupy.io/job-search?term={skills}"},
+    ]},
+    {code:"MX",name:"Mexico",flag:"🇲🇽",cities:["Mexico City","Guadalajara","Monterrey","Remote"],boards:[
+      {name:"LinkedIn",icon:"💼",desc:"Professional network",rating:4.8,color:"#0a66c2",urlTemplate:"https://www.linkedin.com/jobs/search/?keywords={skills}&location={loc}%2C+Mexico"},
+      {name:"OCC Mundial",icon:"🌎",desc:"Mexico's top job board",rating:4.5,color:"#d62b2b",urlTemplate:"https://www.occ.com.mx/empleos/de-{skills}/en-{loc}/"},
+      {name:"Indeed MX",icon:"🔍",desc:"Mexican job search",rating:4.3,color:"#003a9b",urlTemplate:"https://mx.indeed.com/jobs?q={skills}&l={loc}"},
+    ]},
+  ],
+};
 
-/* ─────────────────────────────────────────────
-   COMPONENTS
-───────────────────────────────────────────── */
-function ScoreRing({score,size=56}){
-  const pct=Math.round(score*100);
-  const r=20,circ=2*Math.PI*r,dash=(pct/100)*circ;
-  const col=pct>=70?"#00875a":pct>=45?"#b8860b":"#c0392b";
-  return(
+/* ─── ANTHROPIC API CALL ─── */
+async function callClaude(apiKey, systemPrompt, userMessage, maxTokens = 1500) {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userMessage }],
+    }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${response.status}`);
+  }
+  const data = await response.json();
+  const text = data.content.map(b => b.text || "").join("");
+  const clean = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+  return JSON.parse(clean);
+}
+
+/* ─── COMPONENTS ─── */
+function ScoreRing({score, size=56}) {
+  const pct = Math.round(score * 100);
+  const r = 20, circ = 2 * Math.PI * r, dash = (pct / 100) * circ;
+  const col = pct >= 70 ? "#00875a" : pct >= 45 ? "#b8860b" : "#c0392b";
+  return (
     <svg width={size} height={size} viewBox="0 0 48 48" style={{flexShrink:0}}>
       <circle cx="24" cy="24" r={r} fill="none" stroke="#262d3d" strokeWidth="5"/>
       <circle cx="24" cy="24" r={r} fill="none" stroke={col} strokeWidth="5"
@@ -293,26 +430,26 @@ function ScoreRing({score,size=56}){
   );
 }
 
-function Stars({rating}){
-  const full=Math.floor(rating),half=rating%1>=0.5;
-  return(
+function Stars({rating}) {
+  const full = Math.floor(rating), half = rating % 1 >= 0.5;
+  return (
     <span className="stars">
-      {"★".repeat(full)}{half?"½":""}{"☆".repeat(5-full-(half?1:0))}
+      {"★".repeat(full)}{half ? "½" : ""}{"☆".repeat(5 - full - (half ? 1 : 0))}
       <span style={{color:"var(--muted)",fontSize:"10px",marginLeft:"4px",fontFamily:"monospace"}}>{Number(rating).toFixed(1)}</span>
     </span>
   );
 }
 
-function Terminal({lines}){
-  const ref=useRef();
-  useEffect(()=>{if(ref.current)ref.current.scrollTop=ref.current.scrollHeight;},[lines]);
-  if(!lines.length)return null;
-  return(
+function Terminal({lines}) {
+  const ref = useRef();
+  useEffect(() => { if (ref.current) ref.current.scrollTop = ref.current.scrollHeight; }, [lines]);
+  if (!lines.length) return null;
+  return (
     <div className="terminal" ref={ref}>
-      {lines.map((l,i)=>(
+      {lines.map((l, i) => (
         <div key={i} className="t-line">
           <span className="t-prompt">$</span>
-          <span className={`t-${l.type||"text"}`}>{l.text}</span>
+          <span className={`t-${l.type || "text"}`}>{l.text}</span>
         </div>
       ))}
       <div className="t-line"><span className="t-prompt">$</span><span className="t-cursor"/></div>
@@ -320,62 +457,61 @@ function Terminal({lines}){
   );
 }
 
-function JobCard({job,index}){
-  const[open,setOpen]=useState(false);
-  const[rev,setRev]=useState(null);
-  const[revLoad,setRevLoad]=useState(false);
-  const pct=Math.round(job.score*100);
-  const col=pct>=70?"var(--green)":pct>=45?"var(--yellow)":"var(--red)";
+function JobCard({job, index, apiKey}) {
+  const [open, setOpen] = useState(false);
+  const [rev, setRev] = useState(null);
+  const [revLoad, setRevLoad] = useState(false);
+  const pct = Math.round(job.score * 100);
+  const col = pct >= 70 ? "var(--green)" : pct >= 45 ? "var(--yellow)" : "var(--red)";
 
-  async function toggle(){
-    setOpen(p=>!p);
-    if(!open&&!rev){
+  async function toggle() {
+    setOpen(p => !p);
+    if (!open && !rev) {
       setRevLoad(true);
-      try{
-        const resp=await fetch("/api/review",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify(job)
-        });
-        if(!resp.ok) throw new Error("Review request failed");
-        setRev(await resp.json());
-      }catch(e){
-        setRev({review:"Unable to generate review at this time.",prioritySkills:[]});
+      try {
+        const result = await callClaude(
+          apiKey,
+          `You are a career coach. Given a job listing details, provide a concise personalised review and priority skills. Return ONLY valid JSON with keys: "review" (string, 2-3 sentences), "prioritySkills" (array of 3-5 skill strings).`,
+          `Job: ${JSON.stringify(job)}`
+        );
+        setRev(result);
+      } catch (e) {
+        setRev({ review: "Unable to generate review at this time.", prioritySkills: [] });
       }
       setRevLoad(false);
     }
   }
 
-  return(
-    <div className="job-card" style={{borderLeft:`3px solid ${col}`,animation:`fadeUp .4s ease ${index*.06}s both`}} onClick={toggle}>
+  return (
+    <div className="job-card" style={{borderLeft:`3px solid ${col}`, animation:`fadeUp .4s ease ${index * .06}s both`}} onClick={toggle}>
       <div className="jc-header">
         <ScoreRing score={job.score}/>
         <div className="jc-meta">
           <div className="jc-rank">
             <span>#{index+1}</span>
-            <Stars rating={job.companyRating||3.5}/>
+            <Stars rating={job.companyRating || 3.5}/>
             <span style={{color:"var(--muted2)",fontFamily:"monospace"}}>{job.company}</span>
           </div>
           <div className="jc-title">{job.title}</div>
           <div className="jc-badges">
-            {job.salary&&<span className="badge b-yellow">💰 {job.salary}</span>}
-            {job.location&&<span className="badge b-blue">📍 {job.location}</span>}
-            {job.remote&&<span className="badge b-green">🌐 Remote</span>}
-            {job.experience&&<span className="badge b-gray">⏱ {job.experience}</span>}
-            {(job.requiredSkills||[]).slice(0,2).map(t=><span key={t} className="badge b-gray">{t}</span>)}
+            {job.salary && <span className="badge b-yellow">💰 {job.salary}</span>}
+            {job.location && <span className="badge b-blue">📍 {job.location}</span>}
+            {job.remote && <span className="badge b-green">🌐 Remote</span>}
+            {job.experience && <span className="badge b-gray">⏱ {job.experience}</span>}
+            {(job.requiredSkills || []).slice(0, 2).map(t => <span key={t} className="badge b-gray">{t}</span>)}
           </div>
         </div>
-        <span style={{color:"var(--muted2)",fontSize:"13px",flexShrink:0}}>{open?"▲":"▼"}</span>
+        <span style={{color:"var(--muted2)",fontSize:"13px",flexShrink:0}}>{open ? "▲" : "▼"}</span>
       </div>
 
-      {open&&(
-        <div className="jc-body" onClick={e=>e.stopPropagation()}>
+      {open && (
+        <div className="jc-body" onClick={e => e.stopPropagation()}>
           <div className="metrics-3" style={{marginBottom:"18px"}}>
             {[
               {l:"Match Score",v:`${pct}%`,c:col},
-              {l:"Skill Overlap",v:`${Math.round((job.skillScore||0)*100)}%`,c:"var(--purple)"},
-              {l:"Company Rating",v:`${Number(job.companyRating||3.5).toFixed(1)}/5`,c:"var(--yellow)"},
-            ].map(m=>(
+              {l:"Skill Overlap",v:`${Math.round((job.skillScore || 0) * 100)}%`,c:"var(--purple)"},
+              {l:"Company Rating",v:`${Number(job.companyRating || 3.5).toFixed(1)}/5`,c:"var(--yellow)"},
+            ].map(m => (
               <div key={m.l} className="metric">
                 <div className="metric-val" style={{color:m.c}}>{m.v}</div>
                 <div className="metric-lbl">{m.l}</div>
@@ -385,66 +521,66 @@ function JobCard({job,index}){
 
           <div className="ai-box" style={{marginBottom:"16px"}}>
             <div className="ai-label">⚡ AI Career Coach</div>
-            {revLoad?(
+            {revLoad ? (
               <div style={{display:"flex",gap:"8px",alignItems:"center",color:"var(--muted)",fontSize:"13px"}}>
                 <span className="spin" style={{borderTopColor:"var(--green)"}}/>Generating personalised review...
               </div>
-            ):rev?(
+            ) : rev ? (
               <>
                 <p className="ai-text">{rev.review}</p>
-                {rev.prioritySkills&&rev.prioritySkills.length>0&&(
+                {rev.prioritySkills && rev.prioritySkills.length > 0 && (
                   <div style={{marginTop:"12px"}}>
                     <div style={{fontFamily:"monospace",fontSize:"9px",color:"var(--green)",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"6px"}}>🎯 Priority skills to unlock this role</div>
                     <div style={{display:"flex",flexWrap:"wrap",gap:"5px"}}>
-                      {rev.prioritySkills.map(s=><span key={s} className="stag" style={{background:"var(--purple-light)",color:"var(--purple)",borderColor:"rgba(91,33,182,0.2)"}}>{s}</span>)}
+                      {rev.prioritySkills.map(s => <span key={s} className="stag" style={{background:"var(--purple-light)",color:"var(--purple)",borderColor:"rgba(91,33,182,0.2)"}}>{s}</span>)}
                     </div>
                   </div>
                 )}
               </>
-            ):null}
+            ) : null}
           </div>
 
-          {job.matched&&job.matched.length>0&&(
+          {job.matched && job.matched.length > 0 && (
             <div style={{marginBottom:"12px"}}>
               <div style={{fontFamily:"monospace",fontSize:"9px",color:"var(--muted)",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"7px"}}>✅ Skills you have ({job.matched.length})</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:"5px"}}>
-                {job.matched.map(s=><span key={s} className="stag" style={{background:"var(--green-light)",color:"var(--green)",borderColor:"rgba(0,135,90,0.2)"}}>{s}</span>)}
+                {job.matched.map(s => <span key={s} className="stag" style={{background:"var(--green-light)",color:"var(--green)",borderColor:"rgba(0,135,90,0.2)"}}>{s}</span>)}
               </div>
             </div>
           )}
-          {job.missing&&job.missing.length>0&&(
+          {job.missing && job.missing.length > 0 && (
             <div style={{marginBottom:"14px"}}>
               <div style={{fontFamily:"monospace",fontSize:"9px",color:"var(--muted)",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"7px"}}>❌ Skills to learn ({job.missing.length})</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:"5px"}}>
-                {job.missing.map(s=><span key={s} className="stag" style={{background:"var(--red-light)",color:"var(--red)",borderColor:"rgba(192,57,43,0.2)"}}>{s}</span>)}
+                {job.missing.map(s => <span key={s} className="stag" style={{background:"var(--red-light)",color:"var(--red)",borderColor:"rgba(192,57,43,0.2)"}}>{s}</span>)}
               </div>
             </div>
           )}
-          {job.niceToHave&&job.niceToHave.length>0&&(
+          {job.niceToHave && job.niceToHave.length > 0 && (
             <div style={{marginBottom:"14px"}}>
               <div style={{fontFamily:"monospace",fontSize:"9px",color:"var(--muted)",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"7px"}}>💡 Nice to have</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:"5px"}}>
-                {job.niceToHave.map(s=><span key={s} className="stag" style={{background:"var(--orange-light)",color:"var(--orange)",borderColor:"rgba(217,95,0,0.2)"}}>{s}</span>)}
+                {job.niceToHave.map(s => <span key={s} className="stag" style={{background:"var(--orange-light)",color:"var(--orange)",borderColor:"rgba(217,95,0,0.2)"}}>{s}</span>)}
               </div>
             </div>
           )}
-          {job.snippet&&(
+          {job.snippet && (
             <div style={{background:"var(--card2)",borderRadius:"8px",padding:"12px",fontSize:"13px",color:"var(--muted)",lineHeight:"1.7",margin:"14px 0",borderLeft:"3px solid rgba(124,111,255,0.5)"}}>
               {job.snippet}
             </div>
           )}
           <div className="action-row">
-            {job.linkedinUrl&&<a href={job.linkedinUrl} target="_blank" rel="noopener noreferrer" className="action-btn"
+            {job.linkedinUrl && <a href={job.linkedinUrl} target="_blank" rel="noopener noreferrer" className="action-btn"
               style={{background:"rgba(0,119,181,0.2)",color:"#4d9fff",borderColor:"rgba(77,159,255,0.3)"}}>💼 LinkedIn Jobs →</a>}
-            {job.indeedUrl&&<a href={job.indeedUrl} target="_blank" rel="noopener noreferrer" className="action-btn"
+            {job.indeedUrl && <a href={job.indeedUrl} target="_blank" rel="noopener noreferrer" className="action-btn"
               style={{background:"rgba(37,87,167,0.2)",color:"#4d9fff",borderColor:"rgba(77,159,255,0.3)"}}>🔍 Indeed</a>}
-            {job.googleJobsUrl&&<a href={job.googleJobsUrl} target="_blank" rel="noopener noreferrer" className="action-btn"
+            {job.googleJobsUrl && <a href={job.googleJobsUrl} target="_blank" rel="noopener noreferrer" className="action-btn"
               style={{background:"var(--yellow-light)",color:"var(--yellow)",borderColor:"rgba(184,134,11,0.2)"}}>🌐 Google Jobs</a>}
-            {job.naukri&&<a href={job.naukri} target="_blank" rel="noopener noreferrer" className="action-btn"
+            {job.naukri && <a href={job.naukri} target="_blank" rel="noopener noreferrer" className="action-btn"
               style={{background:"var(--orange-light)",color:"var(--orange)",borderColor:"rgba(217,95,0,0.2)"}}>🔶 Naukri</a>}
-            {job.wellfoundUrl&&<a href={job.wellfoundUrl} target="_blank" rel="noopener noreferrer" className="action-btn"
+            {job.wellfoundUrl && <a href={job.wellfoundUrl} target="_blank" rel="noopener noreferrer" className="action-btn"
               style={{background:"var(--purple-light)",color:"var(--purple)",borderColor:"rgba(91,33,182,0.2)"}}>🚀 Wellfound</a>}
-            {job.glassdoorUrl&&<a href={job.glassdoorUrl} target="_blank" rel="noopener noreferrer" className="action-btn"
+            {job.glassdoorUrl && <a href={job.glassdoorUrl} target="_blank" rel="noopener noreferrer" className="action-btn"
               style={{background:"var(--green-light)",color:"var(--green)",borderColor:"rgba(0,135,90,0.2)"}}>⭐ Glassdoor Reviews</a>}
           </div>
         </div>
@@ -453,40 +589,38 @@ function JobCard({job,index}){
   );
 }
 
-function LearningPath({role,missingSkills,userSkills}){
-  const[data,setData]=useState([]);
-  const[loading,setLoading]=useState(true);
+function LearningPath({role, missingSkills, userSkills, apiKey}) {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(()=>{
-    if(!role||!missingSkills||!missingSkills.length){setLoading(false);return;}
-    fetch("/api/roadmap",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({role,missingSkills:missingSkills.slice(0,7),userSkills})
-    })
-      .then(r=>{if(!r.ok)throw new Error("Roadmap failed");return r.json();})
-      .then(d=>{setData(d);setLoading(false);})
-      .catch(()=>setLoading(false));
-  },[role]);
+  useEffect(() => {
+    if (!role || !missingSkills || !missingSkills.length) { setLoading(false); return; }
+    callClaude(
+      apiKey,
+      `You are a career roadmap expert. Given a target role and missing skills, generate a prioritised learning roadmap. Return ONLY valid JSON: an array of objects with keys: "skill" (string), "why" (string, 1 sentence), "priority" (number 1-100), "weeks" (number), "resources" (array of {name, url, platform}).`,
+      `Target role: ${role}\nMissing skills: ${missingSkills.slice(0,7).join(", ")}\nUser already knows: ${userSkills.join(", ")}`
+    ).then(d => { setData(Array.isArray(d) ? d : []); setLoading(false); })
+     .catch(() => setLoading(false));
+  }, [role]);
 
-  if(!role)return null;
+  if (!role) return null;
 
-  return(
+  return (
     <div className="learn-card fu2">
       <div className="learn-title">📈 AI Learning Roadmap</div>
       <div className="learn-sub">Personalised path to become a <strong>{role}</strong> — sorted by impact</div>
-      {loading?(
+      {loading ? (
         <div style={{display:"flex",gap:"10px",alignItems:"center",color:"var(--muted)",fontSize:"13px"}}>
           <span className="spin" style={{borderTopColor:"var(--green)"}}/>Generating your personalised roadmap...
         </div>
-      ):data.length?(
-        data.map(item=>(
+      ) : data.length ? (
+        data.map(item => (
           <div key={item.skill} className="skill-item">
             <div style={{flex:1,minWidth:0}}>
               <div className="skill-name">{item.skill}</div>
               <div className="skill-why">{item.why}</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:"5px",marginTop:"7px"}}>
-                {(item.resources||[]).map(r=>(
+                {(item.resources || []).map(r => (
                   <a key={r.name} href={r.url} target="_blank" rel="noopener noreferrer" className="course-chip">
                     🎓 {r.name} <span style={{opacity:.6,fontSize:"9px"}}>({r.platform})</span>
                   </a>
@@ -502,50 +636,50 @@ function LearningPath({role,missingSkills,userSkills}){
             </div>
           </div>
         ))
-      ):(
+      ) : (
         <div style={{color:"var(--muted)",fontSize:"13px"}}>No roadmap data available.</div>
       )}
     </div>
   );
 }
 
-function makeBoardUrl(template,skills,city){
-  const s=(skills||[]).slice(0,3).join(" ");
-  const loc=city&&city!=="Any City"?city:"";
+function makeBoardUrl(template, skills, city) {
+  const s = (skills || []).slice(0, 3).join(" ");
+  const loc = city && city !== "Any City" ? city : "";
   return template
-    .replace("{skills}",encodeURIComponent(s))
-    .replace("{loc}",encodeURIComponent(loc))
-    .replace("{location}",encodeURIComponent(loc));
+    .replace("{skills}", encodeURIComponent(s))
+    .replace("{loc}", encodeURIComponent(loc))
+    .replace("{location}", encodeURIComponent(loc));
 }
 
-function BoardLinks({boards,skills,city}){
-  const[search,setSearch]=useState("");
-  if(!boards||!boards.length||!skills||!skills.length)return null;
+function BoardLinks({boards, skills, city}) {
+  const [search, setSearch] = useState("");
+  if (!boards || !boards.length || !skills || !skills.length) return null;
 
-  const filtered=boards.filter(b=>{
-    const q=search.toLowerCase();
-    return !q||b.name.toLowerCase().includes(q)||(b.desc||"").toLowerCase().includes(q);
-  }).sort((a,b)=>b.rating-a.rating);
+  const filtered = boards.filter(b => {
+    const q = search.toLowerCase();
+    return !q || b.name.toLowerCase().includes(q) || (b.desc || "").toLowerCase().includes(q);
+  }).sort((a, b) => b.rating - a.rating);
 
-  return(
+  return (
     <div className="boards-section">
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px",flexWrap:"wrap",gap:"10px"}}>
         <div className="boards-title" style={{marginBottom:0}}>
           <span>🔗</span> {boards.length} Job Boards · Sorted by Rating
         </div>
-        <input value={search} onChange={e=>setSearch(e.target.value)}
+        <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search boards..."
           style={{padding:"6px 12px",borderRadius:"8px",border:"1.5px solid var(--border)",
             background:"var(--card2)",fontFamily:"'JetBrains Mono',monospace",
             fontSize:"11px",color:"var(--text)",width:"170px"}}/>
       </div>
       <div className="boards-grid">
-        {filtered.map(b=>{
-          const url=makeBoardUrl(b.urlTemplate,skills,city);
-          return(
+        {filtered.map(b => {
+          const url = makeBoardUrl(b.urlTemplate, skills, city);
+          return (
             <a key={b.name} href={url} target="_blank" rel="noopener noreferrer" className="board-card"
-              onMouseEnter={e=>{e.currentTarget.style.borderColor=b.color;e.currentTarget.style.transform="translateY(-2px)";}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.transform="none";}}>
+              onMouseEnter={e => { e.currentTarget.style.borderColor = b.color; e.currentTarget.style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.transform = "none"; }}>
               <div className="board-top">
                 <span className="board-icon">{b.icon}</span>
                 <div style={{flex:1,minWidth:0}}>
@@ -556,11 +690,11 @@ function BoardLinks({boards,skills,city}){
               </div>
               <div className="board-bottom">
                 <span className="stars">
-                  {"★".repeat(Math.floor(b.rating))}{b.rating%1>=0.5?"½":""}
+                  {"★".repeat(Math.floor(b.rating))}{b.rating % 1 >= 0.5 ? "½" : ""}
                   <span style={{color:"var(--muted)",fontSize:"10px",marginLeft:"4px"}}>{Number(b.rating).toFixed(1)}</span>
                 </span>
                 <span style={{fontFamily:"monospace",fontSize:"9px",color:b.color,background:b.color+"18",borderRadius:"4px",padding:"1px 7px"}}>
-                  {(skills[0]||"").slice(0,12)}
+                  {(skills[0] || "").slice(0, 12)}
                 </span>
               </div>
             </a>
@@ -571,16 +705,16 @@ function BoardLinks({boards,skills,city}){
   );
 }
 
-function CountrySelector({selected,onSelect}){
-  return(
+function CountrySelector({selected, onSelect}) {
+  return (
     <div className="country-regions">
-      {Object.entries(COUNTRIES).map(([region,countries])=>(
+      {Object.entries(COUNTRIES).map(([region, countries]) => (
         <div key={region}>
           <div className="region-title">— {region} —</div>
           <div className="country-chips">
-            {countries.map(c=>(
-              <button key={c.code} className={`country-chip ${selected&&selected.code===c.code?"active":""}`}
-                onClick={()=>onSelect(c)}>
+            {countries.map(c => (
+              <button key={c.code} className={`country-chip ${selected && selected.code === c.code ? "active" : ""}`}
+                onClick={() => onSelect(c)}>
                 <span>{c.flag}</span><span>{c.name}</span>
               </button>
             ))}
@@ -591,103 +725,104 @@ function CountrySelector({selected,onSelect}){
   );
 }
 
-/* ─────────────────────────────────────────────
-   MAIN APP
-───────────────────────────────────────────── */
-function App(){
-  const[resume,setResume]=useState("");
-  const[country,setCountry]=useState(null);
-  const[city,setCity]=useState("Any City");
-  const[loading,setLoading]=useState(false);
-  const[logs,setLogs]=useState([]);
-  const[error,setError]=useState("");
-  const[analyzed,setAnalyzed]=useState(false);
-  const[mySkills,setMySkills]=useState([]);
-  const[myRole,setMyRole]=useState(null);
-  const[missing,setMissing]=useState([]);
-  const[jobs,setJobs]=useState([]);
-  const[sortBy,setSortBy]=useState("rating");
-  const[activeTab,setActiveTab]=useState("find");
-  const[salaryRef,setSalaryRef]=useState(null);
+/* ─── MAIN APP ─── */
+function App() {
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem("rm_apikey") || "");
+  const [apiKeyInput, setApiKeyInput] = useState(() => localStorage.getItem("rm_apikey") || "");
+  const [showKey, setShowKey] = useState(false);
+  const [resume, setResume] = useState("");
+  const [country, setCountry] = useState(null);
+  const [city, setCity] = useState("Any City");
+  const [loading, setLoading] = useState(false);
+  const [logs, setLogs] = useState([]);
+  const [error, setError] = useState("");
+  const [analyzed, setAnalyzed] = useState(false);
+  const [mySkills, setMySkills] = useState([]);
+  const [myRole, setMyRole] = useState(null);
+  const [missing, setMissing] = useState([]);
+  const [jobs, setJobs] = useState([]);
+  const [sortBy, setSortBy] = useState("rating");
+  const [activeTab, setActiveTab] = useState("find");
+  const [salaryRef, setSalaryRef] = useState(null);
 
-  function log(type,text){setLogs(p=>[...p,{type,text}]);}
+  function log(type, text) { setLogs(p => [...p, {type, text}]); }
 
-  async function analyze(){
-    if(!resume.trim()||!country)return;
+  function saveKey() {
+    localStorage.setItem("rm_apikey", apiKeyInput);
+    setApiKey(apiKeyInput);
+  }
+
+  async function analyze() {
+    if (!resume.trim() || !country || !apiKey) return;
     setLoading(true);
     setError("");
     setJobs([]);
     setAnalyzed(false);
     setLogs([]);
 
-    log("text","Sending resume to backend...");
-    try{
-      log("text","Scanning resume for skills...");
-      const resp=await fetch("/api/analyze",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({resume,country:country.name,city})
-      });
+    try {
+      log("text", "Scanning resume with Claude AI...");
 
-      if(!resp.ok){
-        const err=await resp.json().catch(()=>({error:"Server error"}));
-        setError(err.error||"Server error — please try again");
-        setLoading(false);
-        return;
-      }
+      const analyzeSystem = `You are an expert resume parser and job matching AI. Parse the resume, detect skills, identify the likely job role, find skill gaps, estimate salary, and generate realistic job listings for the specified country/city. Return ONLY valid JSON with these exact keys:
+- "skills": array of skill strings detected from resume
+- "role": string, the detected job role/title
+- "confidence": number 0-100, confidence in role detection
+- "missing": array of skills commonly required for this role that are missing from resume
+- "salaryRef": string, salary range for this role in the given country (e.g. "$80,000–$120,000/yr")
+- "jobs": array of 6-8 realistic job objects, each with: title, company, score (0-1 float), skillScore (0-1 float), companyRating (1-5 float), salary (string), location (string), remote (boolean), experience (string), requiredSkills (array), matched (array of skills from resume matching this job), missing (array of skills needed but not in resume), niceToHave (array), snippet (string, 1-2 sentence job description), linkedinUrl (string), indeedUrl (string), googleJobsUrl (string)`;
 
-      const data=await resp.json();
+      log("text", "Detecting skills and role...");
+      const data = await callClaude(
+        apiKey,
+        analyzeSystem,
+        `Resume:\n${resume}\n\nCountry: ${country.name}\nCity: ${city}`,
+        2000
+      );
 
-      if(data.error){
-        setError(data.error);
-        setLoading(false);
-        return;
-      }
-
-      setMySkills(data.skills||[]);
-      log("ok",`Detected ${(data.skills||[]).length} skills: ${(data.skills||[]).slice(0,6).join(", ")}${(data.skills||[]).length>6?"...":""}`);
+      setMySkills(data.skills || []);
+      log("ok", `Detected ${(data.skills || []).length} skills: ${(data.skills || []).slice(0, 6).join(", ")}${(data.skills || []).length > 6 ? "..." : ""}`);
 
       setMyRole(data.role);
-      log("data",`Detected role: ${data.role} (${data.confidence}% confidence)`);
+      log("data", `Detected role: ${data.role} (${data.confidence}% confidence)`);
 
-      setMissing(data.missing||[]);
-      if(data.missing&&data.missing.length){
-        log("warn",`Skill gaps: ${data.missing.slice(0,5).join(", ")}${data.missing.length>5?` +${data.missing.length-5} more`:""}`);
+      setMissing(data.missing || []);
+      if (data.missing && data.missing.length) {
+        log("warn", `Skill gaps: ${data.missing.slice(0, 5).join(", ")}${data.missing.length > 5 ? ` +${data.missing.length - 5} more` : ""}`);
       }
 
-      setSalaryRef(data.salaryRef||null);
-      if(data.salaryRef){
-        log("data",`Salary benchmark for ${data.role} in ${country.name}: ${data.salaryRef}`);
+      setSalaryRef(data.salaryRef || null);
+      if (data.salaryRef) {
+        log("data", `Salary benchmark for ${data.role} in ${country.name}: ${data.salaryRef}`);
       }
 
-      log("text",`Searching jobs in ${city!=="Any City"?city+", ":""}${country.name}...`);
-      if(data.jobs&&data.jobs.length){
+      log("text", `Searching jobs in ${city !== "Any City" ? city + ", " : ""}${country.name}...`);
+      if (data.jobs && data.jobs.length) {
         setJobs(data.jobs);
-        log("ok",`✓ ${data.jobs.length} jobs found`);
-      }else{
-        log("warn","No jobs returned — use job board links below");
+        log("ok", `✓ ${data.jobs.length} jobs found`);
+      } else {
+        log("warn", "No jobs returned — use job board links below");
       }
 
       setAnalyzed(true);
-    }catch(e){
-      setError("Network error: "+e.message);
+    } catch (e) {
+      setError("Error: " + e.message);
       setAnalyzed(true);
-    }finally{
+    } finally {
       setLoading(false);
     }
   }
 
-  function sortedJobs(){
-    if(sortBy==="rating")return[...jobs].sort((a,b)=>(b.companyRating||0)-(a.companyRating||0));
-    if(sortBy==="match") return[...jobs].sort((a,b)=>b.score-a.score);
-    if(sortBy==="salary")return[...jobs].sort((a,b)=>(b.salary?1:0)-(a.salary?1:0)||b.score-a.score);
+  function sortedJobs() {
+    if (sortBy === "rating") return [...jobs].sort((a, b) => (b.companyRating || 0) - (a.companyRating || 0));
+    if (sortBy === "match") return [...jobs].sort((a, b) => b.score - a.score);
+    if (sortBy === "salary") return [...jobs].sort((a, b) => (b.salary ? 1 : 0) - (a.salary ? 1 : 0) || b.score - a.score);
     return jobs;
   }
 
-  const currentBoards=country&&country.boards?country.boards:[];
-  const currentCities=country&&country.cities?country.cities:[];
+  const currentBoards = country && country.boards ? country.boards : [];
+  const currentCities = country && country.cities ? country.cities : [];
 
-  return(
+  return (
     <div style={{minHeight:"100vh"}}>
       {/* HEADER */}
       <div className="hdr">
@@ -698,15 +833,15 @@ function App(){
             <div className="logo-sub">AI Job Intelligence · Country-Wise</div>
           </div>
         </div>
-        {analyzed&&(
+        {analyzed && (
           <div className="hdr-nav">
             {[
-              {id:"find",  label:"🔍 Find Jobs"},
+              {id:"find", label:"🔍 Find Jobs"},
               {id:"learn", label:"📚 Learn Skills"},
-              {id:"boards",label:"🔗 Job Boards"},
-            ].map(t=>(
-              <button key={t.id} className={`nav-tab ${activeTab===t.id?"active":""}`}
-                onClick={()=>setActiveTab(t.id)}>{t.label}</button>
+              {id:"boards", label:"🔗 Job Boards"},
+            ].map(t => (
+              <button key={t.id} className={`nav-tab ${activeTab === t.id ? "active" : ""}`}
+                onClick={() => setActiveTab(t.id)}>{t.label}</button>
             ))}
           </div>
         )}
@@ -714,17 +849,46 @@ function App(){
 
       <div className="main">
         {/* HERO */}
-        {!analyzed&&(
+        {!analyzed && (
           <div className="hero fu">
-            <div className="hero-tag">🐍 Python + Flask · Zero External APIs</div>
+            <div className="hero-tag">✨ Powered by Claude AI · Works Worldwide</div>
             <h1>AI Finds Your<br/><span>Perfect Job</span><br/>Worldwide</h1>
             <p>Paste your resume — AI detects your skills, identifies your role, matches jobs in 40+ countries, scores every result, and builds a personalised learning roadmap.</p>
           </div>
         )}
 
+        {/* API KEY */}
+        <div className="api-key-banner fu">
+          <div style={{flex:1}}>
+            <div className="api-key-banner-label">🔑 Anthropic API Key Required</div>
+            <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
+              <input
+                type={showKey ? "text" : "password"}
+                className="api-key-input"
+                style={{flex:1,minWidth:"200px",maxWidth:"420px"}}
+                value={apiKeyInput}
+                onChange={e => setApiKeyInput(e.target.value)}
+                placeholder="sk-ant-..."
+              />
+              <button onClick={() => setShowKey(s => !s)}
+                style={{padding:"10px 14px",borderRadius:"8px",border:"1.5px solid var(--border)",background:"var(--card2)",color:"var(--muted)",cursor:"pointer",fontFamily:"monospace",fontSize:"11px"}}>
+                {showKey ? "🙈 Hide" : "👁 Show"}
+              </button>
+              <button onClick={saveKey}
+                style={{padding:"10px 18px",borderRadius:"8px",border:"none",background:"linear-gradient(135deg,#7c6fff,#4d9fff)",color:"#fff",cursor:"pointer",fontFamily:"monospace",fontSize:"11px",fontWeight:"700"}}>
+                Save Key
+              </button>
+            </div>
+            <div style={{fontFamily:"monospace",fontSize:"9px",color:"var(--muted2)",marginTop:"6px",letterSpacing:"1px"}}>
+              Get your key at console.anthropic.com · Stored locally in your browser only
+            </div>
+          </div>
+          {apiKey && <div style={{color:"var(--green)",fontFamily:"monospace",fontSize:"11px",flexShrink:0}}>✓ Key saved</div>}
+        </div>
+
         {/* INPUT CARD */}
-        <div className={`card ${analyzed?"fu":"fu1"}`} style={analyzed?{marginBottom:"12px"}:{}}>
-          {analyzed&&(
+        <div className={`card ${analyzed ? "fu" : "fu1"}`} style={analyzed ? {marginBottom:"12px"} : {}}>
+          {analyzed && (
             <div style={{marginBottom:"16px",fontFamily:"monospace",fontSize:"11px",color:"var(--muted)",letterSpacing:"1px",textTransform:"uppercase"}}>
               ↺ Refine your search
             </div>
@@ -732,17 +896,17 @@ function App(){
 
           <div className="field-label" style={{marginBottom:"14px"}}>
             <span>🌍 Select Country</span>
-            {country&&<span style={{color:"var(--accent)",fontWeight:"700"}}>{country.flag} {country.name}</span>}
+            {country && <span style={{color:"var(--accent)",fontWeight:"700"}}>{country.flag} {country.name}</span>}
           </div>
-          <CountrySelector selected={country} onSelect={c=>{setCountry(c);setCity("Any City");setAnalyzed(false);setJobs([]);setLogs([]);setError("");}}/>
+          <CountrySelector selected={country} onSelect={c => { setCountry(c); setCity("Any City"); setAnalyzed(false); setJobs([]); setLogs([]); setError(""); }}/>
 
-          {country&&currentCities.length>0&&(
+          {country && currentCities.length > 0 && (
             <div style={{marginTop:"20px"}}>
               <div className="field-label">📍 Preferred City</div>
               <div className="country-chips">
-                {["Any City",...currentCities].map(c=>(
-                  <button key={c} className={`country-chip ${city===c?"active":""}`}
-                    onClick={()=>setCity(c)}>{c}</button>
+                {["Any City", ...currentCities].map(c => (
+                  <button key={c} className={`country-chip ${city === c ? "active" : ""}`}
+                    onClick={() => setCity(c)}>{c}</button>
                 ))}
               </div>
             </div>
@@ -755,44 +919,45 @@ function App(){
             </div>
             <textarea
               value={resume}
-              onChange={e=>setResume(e.target.value)}
+              onChange={e => setResume(e.target.value)}
               placeholder={`Paste your resume or LinkedIn summary here...\n\nExample:\nFull Stack Developer | 4 years\nSkills: React, Node.js, TypeScript, PostgreSQL, Docker, AWS, GraphQL\n\nBuilt scalable microservices handling 2M+ daily users at FinTech startup.\nLed team of 3 engineers using Scrum methodology.`}
             />
-            {mySkills.length>0&&(
+            {mySkills.length > 0 && (
               <div style={{display:"flex",flexWrap:"wrap",gap:"5px",marginTop:"10px",alignItems:"center"}}>
                 <span style={{fontFamily:"monospace",fontSize:"9px",color:"var(--muted2)",textTransform:"uppercase",letterSpacing:"1px",marginRight:"4px"}}>Detected:</span>
-                {mySkills.map(s=><span key={s} className="stag" style={{background:"var(--green-light)",color:"var(--green)",borderColor:"rgba(0,135,90,0.2)"}}>{s}</span>)}
+                {mySkills.map(s => <span key={s} className="stag" style={{background:"var(--green-light)",color:"var(--green)",borderColor:"rgba(0,135,90,0.2)"}}>{s}</span>)}
               </div>
             )}
           </div>
 
           <button className="analyze-btn" onClick={analyze}
-            disabled={loading||!resume.trim()||!country}>
-            {loading?(
+            disabled={loading || !resume.trim() || !country || !apiKey}>
+            {loading ? (
               <><span className="spin"/>Scanning Resume + Finding Jobs...</>
-            ):(
-              `🐍 FIND MY JOBS IN ${country?country.flag+" "+country.name.toUpperCase():"SELECT A COUNTRY"} →`
+            ) : (
+              `🤖 FIND MY JOBS IN ${country ? country.flag + " " + country.name.toUpperCase() : "SELECT A COUNTRY"} →`
             )}
           </button>
+          {!apiKey && <div style={{textAlign:"center",marginTop:"10px",fontFamily:"monospace",fontSize:"10px",color:"var(--orange)",letterSpacing:"1px"}}>⚠ Enter your Anthropic API key above to start</div>}
         </div>
 
-        {!country&&!analyzed&&(
+        {!country && !analyzed && (
           <div style={{textAlign:"center",marginBottom:"12px",fontFamily:"monospace",fontSize:"11px",color:"var(--orange)",letterSpacing:"1px"}}>
             ↑ Select a country above to get started
           </div>
         )}
 
-        {logs.length>0&&<Terminal lines={logs}/>}
-        {error&&<div className="err-box">⚠ {error}</div>}
+        {logs.length > 0 && <Terminal lines={logs}/>}
+        {error && <div className="err-box">⚠ {error}</div>}
 
         {/* ROLE BANNER */}
-        {analyzed&&myRole&&(
+        {analyzed && myRole && (
           <div className="role-banner">
             <div style={{fontSize:"40px"}}>🎯</div>
             <div style={{flex:1}}>
               <div style={{fontFamily:"monospace",fontSize:"9px",opacity:.6,letterSpacing:"2px",textTransform:"uppercase",marginBottom:"5px"}}>Detected Role</div>
               <div style={{fontSize:"22px",fontWeight:"800",letterSpacing:"-0.5px"}}>{myRole}</div>
-              {salaryRef&&(
+              {salaryRef && (
                 <div style={{fontSize:"13px",opacity:.7,marginTop:"3px"}}>
                   Salary benchmark in {country.name}: <strong>{salaryRef}</strong>
                 </div>
@@ -801,9 +966,9 @@ function App(){
             <div style={{display:"flex",gap:"20px"}}>
               {[
                 {l:"Skills Found",v:mySkills.length,c:"#00e5a0"},
-                {l:"Gaps",        v:missing.length, c:"#ffd166"},
-                {l:"Jobs Found",  v:jobs.length,    c:"#60a5fa"},
-              ].map(s=>(
+                {l:"Gaps",v:missing.length,c:"#ffd166"},
+                {l:"Jobs Found",v:jobs.length,c:"#60a5fa"},
+              ].map(s => (
                 <div key={s.l} style={{textAlign:"center"}}>
                   <div style={{fontSize:"26px",fontWeight:"800",color:s.c}}>{s.v}</div>
                   <div style={{fontFamily:"monospace",fontSize:"9px",opacity:.5,textTransform:"uppercase",letterSpacing:"1px"}}>{s.l}</div>
@@ -814,38 +979,38 @@ function App(){
         )}
 
         {/* TABS */}
-        {analyzed&&(
+        {analyzed && (
           <>
-            {activeTab==="find"&&jobs.length>0&&(
+            {activeTab === "find" && jobs.length > 0 && (
               <div style={{animation:"fadeIn .3s ease"}}>
                 <div className="sort-row">
                   <div className="section-hdr" style={{marginBottom:0}}>
-                    {jobs.length} AI-Matched Jobs · {country&&country.flag} {country&&country.name}
+                    {jobs.length} AI-Matched Jobs · {country && country.flag} {country && country.name}
                   </div>
                   <div style={{display:"flex",gap:"6px"}}>
-                    {[{id:"rating",l:"⭐ Rating"},{id:"match",l:"🎯 Match"},{id:"salary",l:"💰 Salary"}].map(s=>(
-                      <button key={s.id} className={`sort-btn ${sortBy===s.id?"active":""}`}
-                        onClick={()=>setSortBy(s.id)}>{s.l}</button>
+                    {[{id:"rating",l:"⭐ Rating"},{id:"match",l:"🎯 Match"},{id:"salary",l:"💰 Salary"}].map(s => (
+                      <button key={s.id} className={`sort-btn ${sortBy === s.id ? "active" : ""}`}
+                        onClick={() => setSortBy(s.id)}>{s.l}</button>
                     ))}
                   </div>
                 </div>
-                {sortedJobs().map((job,i)=><JobCard key={i} job={job} index={i}/>)}
+                {sortedJobs().map((job, i) => <JobCard key={i} job={job} index={i} apiKey={apiKey}/>)}
               </div>
             )}
 
-            {activeTab==="find"&&!jobs.length&&analyzed&&(
+            {activeTab === "find" && !jobs.length && analyzed && (
               <div style={{textAlign:"center",padding:"48px 0",color:"var(--muted)"}}>
                 <div style={{fontSize:"36px",marginBottom:"12px"}}>💡</div>
                 <div style={{fontFamily:"monospace",fontSize:"11px",letterSpacing:"2px"}}>Use the job board links below to find live openings</div>
-                <button className="nav-tab active" style={{marginTop:"14px"}} onClick={()=>setActiveTab("boards")}>View Job Boards →</button>
+                <button className="nav-tab active" style={{marginTop:"14px"}} onClick={() => setActiveTab("boards")}>View Job Boards →</button>
               </div>
             )}
 
-            {activeTab==="learn"&&(
+            {activeTab === "learn" && (
               <div style={{animation:"fadeIn .3s ease"}}>
-                {missing.length>0?(
-                  <LearningPath role={myRole} missingSkills={missing} userSkills={mySkills}/>
-                ):(
+                {missing.length > 0 ? (
+                  <LearningPath role={myRole} missingSkills={missing} userSkills={mySkills} apiKey={apiKey}/>
+                ) : (
                   <div style={{textAlign:"center",padding:"60px 0",color:"var(--muted)"}}>
                     <div style={{fontSize:"48px",marginBottom:"12px"}}>🎉</div>
                     <div style={{fontWeight:"700",fontSize:"18px",marginBottom:"8px",color:"var(--text)"}}>Full skill match!</div>
@@ -855,13 +1020,13 @@ function App(){
                 <div className="card">
                   <div className="section-hdr">✅ Your Detected Skills ({mySkills.length})</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>
-                    {mySkills.map(s=><span key={s} className="stag" style={{background:"var(--green-light)",color:"var(--green)",borderColor:"rgba(0,135,90,0.2)"}}>{s}</span>)}
+                    {mySkills.map(s => <span key={s} className="stag" style={{background:"var(--green-light)",color:"var(--green)",borderColor:"rgba(0,135,90,0.2)"}}>{s}</span>)}
                   </div>
-                  {missing.length>0&&(
+                  {missing.length > 0 && (
                     <>
                       <div className="section-hdr" style={{marginTop:"18px"}}>❌ Missing for {myRole} ({missing.length})</div>
                       <div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>
-                        {missing.map(s=><span key={s} className="stag" style={{background:"var(--red-light)",color:"var(--red)",borderColor:"rgba(192,57,43,0.2)"}}>{s}</span>)}
+                        {missing.map(s => <span key={s} className="stag" style={{background:"var(--red-light)",color:"var(--red)",borderColor:"rgba(192,57,43,0.2)"}}>{s}</span>)}
                       </div>
                     </>
                   )}
@@ -869,18 +1034,18 @@ function App(){
               </div>
             )}
 
-            {activeTab==="boards"&&(
+            {activeTab === "boards" && (
               <div style={{animation:"fadeIn .3s ease"}}>
                 <a className="gjobs-link"
-                  href={`https://www.google.com/search?q=${encodeURIComponent(mySkills.slice(0,3).join(" ")+" jobs "+(city!=="Any City"?city+", ":"")+(country?country.name:""))}&ibp=htl;jobs`}
+                  href={`https://www.google.com/search?q=${encodeURIComponent(mySkills.slice(0,3).join(" ") + " jobs " + (city !== "Any City" ? city + ", " : "") + (country ? country.name : ""))}&ibp=htl;jobs`}
                   target="_blank" rel="noopener noreferrer">
                   <div style={{fontSize:"32px"}}>🌐</div>
                   <div style={{flex:1}}>
                     <div style={{fontFamily:"monospace",fontSize:"10px",color:"var(--purple)",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"4px"}}>
-                      Google Jobs · {city!=="Any City"?city+", ":""}{country&&country.name} · Live Results
+                      Google Jobs · {city !== "Any City" ? city + ", " : ""}{country && country.name} · Live Results
                     </div>
                     <div style={{color:"var(--muted)",fontSize:"13px"}}>
-                      {mySkills.slice(0,4).join(" + ")} · ⭐ Company ratings included
+                      {mySkills.slice(0, 4).join(" + ")} · ⭐ Company ratings included
                     </div>
                   </div>
                   <div style={{fontFamily:"monospace",fontSize:"13px",color:"var(--purple)",flexShrink:0}}>Open →</div>
@@ -892,16 +1057,16 @@ function App(){
         )}
 
         {/* EMPTY STATE */}
-        {!analyzed&&!loading&&(
+        {!analyzed && !loading && (
           <div className="empty fu3">
             <div className="empty-icon">🌍</div>
             <div className="empty-text">Select a country · paste resume · AI does the rest</div>
             <div style={{marginTop:"32px",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"12px",maxWidth:"500px",margin:"32px auto 0"}}>
               {[
-                {step:"01",title:"Select Country",desc:"Choose from 40+ countries across all regions"},
+                {step:"01",title:"Enter API Key",desc:"Get your free Anthropic API key from console.anthropic.com"},
                 {step:"02",title:"Paste Resume",desc:"AI detects your skills, role & salary benchmarks instantly"},
                 {step:"03",title:"Get Matched",desc:"Jobs ranked by company rating, match score & salary"},
-              ].map(s=>(
+              ].map(s => (
                 <div key={s.step} style={{background:"var(--card)",border:"1px solid var(--border)",borderRadius:"12px",padding:"16px",textAlign:"left",boxShadow:"var(--shadow)"}}>
                   <div style={{fontFamily:"monospace",fontSize:"11px",color:"var(--muted2)",marginBottom:"6px"}}>{s.step}</div>
                   <div style={{fontWeight:"700",fontSize:"14px",marginBottom:"5px"}}>{s.title}</div>
@@ -917,7 +1082,6 @@ function App(){
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-{% endraw %}
 </script>
 </body>
 </html>
